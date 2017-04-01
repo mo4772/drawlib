@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="draw.cpp" />
+    <ClCompile Include="drawlib.cpp" />
+    <ClCompile Include="manager.cpp" />
+    <ClCompile Include="rendertextmanager.cpp" />
+    <ClCompile Include="gltool\GLBatch.cpp">
+      <Filter>gltool</Filter>
+    </ClCompile>
+    <ClCompile Include="gltool\GLShaderManager.cpp">
+      <Filter>gltool</Filter>
+    </ClCompile>
+    <ClCompile Include="gltool\math3d.cpp">
+      <Filter>gltool</Filter>
+    </ClCompile>
+    <ClCompile Include="gltool\GLTriangleBatch.cpp">
+      <Filter>gltool</Filter>
+    </ClCompile>
+    <ClCompile Include="gltool\gltools.cpp">
+      <Filter>gltool</Filter>
+    </ClCompile>
+    <ClCompile Include="baselib\pcdeque.cpp">
+      <Filter>baselib</Filter>
+    </ClCompile>
+    <ClCompile Include="baselib\tinycthread.cpp">
+      <Filter>baselib</Filter>
+    </ClCompile>
+    <ClCompile Include="baselib\Timer.cpp">
+      <Filter>baselib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="draw.h" />
+    <ClInclude Include="drawlib.h" />
+    <ClInclude Include="manager.h" />
+    <ClInclude Include="rendertextmanager.h" />
+    <ClInclude Include="typedefine.h" />
+    <ClInclude Include="gltool\GLBatch.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLBatchBase.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLFrame.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLFrustum.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLGeometryTransform.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLMatrixStack.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLShaderManager.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\math3d.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\StopWatch.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\GLTriangleBatch.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="gltool\gltools.h">
+      <Filter>gltool</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\datatype.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\base.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\log.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\pcdeque.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\retcode.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\tinycthread.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+    <ClInclude Include="baselib\Timer.h">
+      <Filter>baselib</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="gltool">
+      <UniqueIdentifier>{3139985a-6938-42c1-9ba7-0e5c5e370ce4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="baselib">
+      <UniqueIdentifier>{3c0df974-0175-4ead-8a4a-8bc8a0b45268}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
