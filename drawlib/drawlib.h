@@ -3,11 +3,16 @@
 #include "typedefine.h"
 
 #ifdef WIN32
+#ifndef USE_STATIC
     #ifdef  DRAWLIB_DLL
     #define DRAWLIB_DECL extern "C" __declspec(dllexport)
     #else
     #define DRAWLIB_DECL extern "C" __declspec(dllimport)
     #endif
+#else
+    #define DRAWLIB_DECL
+    #define __stdcall
+#endif
 #else
     #define DRAWLIB_DECL
     #define __stdcall

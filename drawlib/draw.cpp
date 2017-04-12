@@ -300,7 +300,7 @@ int CDraw::CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen)
 
 int CDraw::CreateSubScreen(SRect rect,int SubSrceenID)
 {
-	LOG_DEBUG<<"Enter the function CDraw::CreateSubScreen1";
+	LOG_DEBUG<<"Enter the function CDraw::CreateSubScreen";
     SubScreenPtr pData(new SSubSrceenData);
 
 	std::map<unsigned int,SubScreenPtr>::iterator FindIt = m_mapWindowsDatas.find(SubSrceenID);
@@ -394,7 +394,7 @@ int CDraw::CreateSubScreen(SRect rect,int SubSrceenID)
 
 	m_mapWindowsDatas.insert(std::make_pair(pData->ID,pData));
 
-	LOG_DEBUG<<"Exit the function CDraw::CreateSubScreen1";
+	LOG_DEBUG<<"Exit the function CDraw::CreateSubScreen";
 	return 0;
 }
 

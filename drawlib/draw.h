@@ -13,6 +13,7 @@
 #include "Timer.h"
 #include "pcdeque.h"
 #include "rendertextmanager.h"
+#include "log.h"
 
 #define GLEW_STATIC
 
@@ -217,7 +218,7 @@ class CDraw
                 }
                 else
                 {
-                    std::cout<<"subsrceen id:"<<ID<<" FPS: "<<m_FPSCount/elapsedTime<<std::endl;
+                    LOG_IF(ERROR, m_FPSCount == 0)<<"subscreen id:"<<ID<<" no image data";
                     m_FPSCount = 0;
                     m_FPSTimer.start();
                 }

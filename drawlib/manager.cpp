@@ -25,13 +25,16 @@ void CManager::Release()
 
 int CManager::Init()
 {
+    LOG_DEBUG << "Enter the function CManager::Init()";
     if (!glfwInit())
     {
+        LOG_ERROR <<"glfw init failed";
         return -1;
     }
 
     int iMonitorCnt = 0;
     GLFWmonitor **pMonitors = glfwGetMonitors(&iMonitorCnt);
+    LOG_DEBUG << "get monitor cnt " << iMonitorCnt;
     for (int i = 0; i < iMonitorCnt; ++i)
     {
         SMonitorInfo monitorInfo;
@@ -42,6 +45,8 @@ int CManager::Init()
         monitorInfo.iMaxWidth = pVideoMode->width;
         monitorInfo.iMaxHeight = pVideoMode->height;
         m_vecMonitorInfos.push_back(monitorInfo);
+
+        LOG_DEBUG << "monitor num " << i << ",width " << pVideoMode->width << ",height " << pVideoMode->height;
     }
 
     mtx_init(&m_mutCreateWindow,mtx_plain);
@@ -51,6 +56,7 @@ int CManager::Init()
     cnd_init(&m_cndCreateDraw);
 
 #ifdef WIN32
+#ifndef USE_STATIC
     google::InitGoogleLogging("drawlib");
     google::SetLogDestination(google::GLOG_INFO, LOGDIR"/Drawlib_INFO_");
     google::SetLogDestination(google::GLOG_ERROR, LOGDIR"/Drawlib_ERROR_");
@@ -59,6 +65,7 @@ int CManager::Init()
     FLAGS_logbufsecs = 0;
     FLAGS_max_log_size = 100;
     FLAGS_stop_logging_if_full_disk = true;
+#endif
 #endif
     m_vecSubScreenID.reserve(MAX_SUBSRCEEN_CNT);
     m_vecSubScreenID.resize(MAX_SUBSRCEEN_CNT);
@@ -98,9 +105,11 @@ int CManager::GetMonitorCnt()
 
 int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen)
 {
+    LOG_DEBUG << "Enter the function CManager::CreateVideoWindows";
+    LOG_DEBUG << "create window,x:" << pos.x << ",y:" << pos.y << ",width:" << pos.width << ",height:" << pos.height;
     if (m_mapVideoWindows.size() > 1)
     {
-        //ERROR("Not allow create more than one windows");
+        LOG_ERROR<<"Not allow create more than one windows";
         return -1;
     }
 
@@ -119,14 +128,15 @@ int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, b
 
     m_mapVideoWindows.insert(std::make_pair(m_iWndID, pData));
 
-    StartWithFull();
-    //DEBUG("Return window with id %d",m_iWndID);
+    Start();
+    LOG_DEBUG << "Exit the function CManager::CreateVideoWindows";
     return m_iWndID++;
 }
 
 int CManager::CreateVideoWindows(SRect pos,const char* pBGFile,int iMonitorNum)
 {
-    //DEBUG("Create window pos(x:%d,y:%d,w:%d,h:%d)",pos.x,pos.y,pos.width,pos.height);
+    LOG_DEBUG << "Enter the function CManager::CreateVideoWindows";
+    LOG_DEBUG << "choose monitor num " << iMonitorNum << " for display";
     if (m_mapVideoWindows.size() > 1)
     {
         //ERROR("Not allow create more than one windows");
@@ -155,8 +165,8 @@ int CManager::CreateVideoWindows(SRect pos,const char* pBGFile,int iMonitorNum)
     
     m_mapVideoWindows.insert(std::make_pair(m_iWndID,pData));
 
-    Start();
-    //DEBUG("Return window with id %d",m_iWndID);
+    StartWithFull();
+    LOG_DEBUG << "Exit the function CManager::CreateVideoWindows";
     return m_iWndID++;
 }
 
@@ -206,10 +216,11 @@ int CManager::ChangeSubscreenPos(int iWindID,int iSubScreenID, SRect Pos)
 
 int CManager::CreateFullScreen(int iWindID)
 {
+    LOG_DEBUG << "Enter the function CManager::CreateFullScreen";
     std::map<int, SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWindID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("Can;t find winid %d",winID);
+        LOG_ERROR << "can't find window with windid " << iWindID;
         return -1;
     }
 
@@ -248,19 +259,18 @@ int CManager::CreateFullScreen(int iWindID)
 
     cnd_wait(&pSubData->cndCreateScreen, &pSubData->mtxCreateScreen);
 
-    /*++m_iGenerSubScreenID;*/
-    //DEBUG("The subsrceen id is %d",pSubData->iSubSrceenID);
+    LOG_DEBUG << "Exit the function CManager::CreateFullScreen";
     return pSubData->iSubSrceenID;
 }
 
 int CManager::CreateSubScreen(int winID,SRect pos)
 {
-    //DEBUG("CreateSubScreen winid is %d,pos(x:%d,y:%d,w:%d,h:%d)",winID,pos.x,pos.y,pos.width,pos.height);
-
+    LOG_DEBUG << "Enter the function CManager::CreateSubScreen";
+    LOG_DEBUG << "create subscreen,x:" << pos.x << ",y:" << pos.y << ",width:" << pos.width << ",height:" << pos.height;
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(winID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("Can;t find winid %d",winID);
+        LOG_ERROR << "can't find window with winid " << winID;
         return -1;
     }
 
@@ -281,7 +291,7 @@ int CManager::CreateSubScreen(int winID,SRect pos)
     
     if (!bHaveID)
     {
-        //ERROR("Already create max cnt subscreen");
+        LOG_ERROR << "Already create max cnt subscreen";
         return -1;
     }
 
@@ -293,27 +303,33 @@ int CManager::CreateSubScreen(int winID,SRect pos)
 
     cnd_wait(&pSubData->cndCreateScreen,&pSubData->mtxCreateScreen);
 
-    /*++m_iGenerSubScreenID;*/
-    //DEBUG("The subsrceen id is %d",pSubData->iSubSrceenID);
+    LOG_DEBUG << "Exit the function CManager::CreateSubScreen";
     return pSubData->iSubSrceenID;
 }
 
 int CManager::DeleteSubScreen(int iWinID,int iSubScreenID)
 {
+    LOG_DEBUG << "Enter the function CManager::DeleteSubScreen";
+    LOG_DEBUG << "delete subscreen,id " << iSubScreenID;
+
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
+        LOG_ERROR << "can't find window with winid " << iWinID;
         return -1;
     }
 
     //回收视口ID
     if (iSubScreenID <0 || iSubScreenID > MAX_SUBSRCEEN_CNT)
     {
+        LOG_ERROR << "invalid subcreen id "<< iSubScreenID;
         return -1;
     }
 
     m_vecSubScreenID[iSubScreenID] = 0;
+    LOG_DEBUG << "Enter the function CManager::DeleteSubScreen";
     return FindIt->second->pDraw->DeleteSubScreen(iSubScreenID);
+
 }
 
 int CManager::UpdateImageData(int iWinID,
@@ -326,28 +342,28 @@ int CManager::UpdateImageData(int iWinID,
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return -1;
     }
 
     return FindIt->second->pDraw->UpdateSubScreenImage(iScreenID,pData,iWidth,iHeight,iSize);
-
 }
 
 int CManager::SetSubScreenVideoText(int winID,int iScreenID,SVideoTextInfo *pTextInfo)
 {
+    LOG_DEBUG << "Enter the function CManager::SetSubScreenVideoText";
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(winID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",winID);
         return -1;
     }
 
+    LOG_DEBUG << "Exit the function CManager::SetSubScreenVideoText";
     return FindIt->second->pDraw->SetSubScreenVideoText(iScreenID,pTextInfo);
 }
 
 int CManager::DisableSubScreenVideoText(int winID,int iScreenID)
 {
+    LOG_DEBUG << "Enter the function CManager::DisableSubScreenVideoText";
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(winID);
     if (FindIt == m_mapVideoWindows.end())
     {
@@ -355,6 +371,7 @@ int CManager::DisableSubScreenVideoText(int winID,int iScreenID)
         return -1;
     }
 
+    LOG_DEBUG << "Exit the function CManager::DisableSubScreenVideoText";
     return FindIt->second->pDraw->DisableSubScreenVideoText(iScreenID);
 }
 
@@ -372,7 +389,7 @@ void CManager::PrintFrameRate(int winID,int iScreenID,bool bEnable)
 
 int CManager::WindThreadForFull(void *arg)
 {
-    //DEBUG("=====>Start windThread");
+    LOG_DEBUG << "=======>Start WindThreadForFull thread";
     CManager *pData = (CManager*)arg;
 
     //创建主窗口
@@ -399,7 +416,6 @@ int CManager::WindThreadForFull(void *arg)
         {
             if (NULL == It->second->pDraw)
             {
-                //ERROR("win id %d draw pointer is NULL",It->first);
                 continue;
             }
 
@@ -413,13 +429,13 @@ int CManager::WindThreadForFull(void *arg)
         glfwWaitEvents();
     }
 
-    //DEBUG("=====>End windThread");
+    LOG_DEBUG << "=======>End WindThreadForFull thread";
     return 0;
 }
 
 int CManager::WindThread(void *arg)
 {
-    //DEBUG("=====>Start windThread");
+    LOG_DEBUG << "======>Start WindThread";
     CManager *pData = (CManager*)arg;
 
     //创建主窗口
@@ -434,7 +450,6 @@ int CManager::WindThread(void *arg)
         //if (-1 == SIt->second->pDraw->CreateVideoSrceen(SIt->second->pos))
 #endif
         {
-            //ERROR("Create video srceen failed");
             return -1;
         }
     }
@@ -447,7 +462,6 @@ int CManager::WindThread(void *arg)
         {
             if (NULL == It->second->pDraw)
             {
-                //ERROR("win id %d draw pointer is NULL",It->first);
                 continue;
             }
             
@@ -461,13 +475,13 @@ int CManager::WindThread(void *arg)
         glfwWaitEvents();
     }
     
-    //DEBUG("=====>End windThread");
+    LOG_DEBUG << "======>End CManager::WindThread";
     return 0;
 }
 
 int CManager::DrawThread(void *arg)
 {
-    //DEBUG("======>Start DrawThread");
+    LOG_DEBUG << "======>Start Draw thread";
     SWindowData *pData = (SWindowData*)arg;
     if (-1 == pData->pDraw->PrepareDrawPic())
     {
@@ -521,7 +535,7 @@ int CManager::DrawThread(void *arg)
         glfwSwapBuffers(pData->pDraw->GetVideoSrceenHanlde());
     }
 
-    //DEBUG("======>End DrawThread");
+    LOG_DEBUG << "======>End Draw thread";
     return 0;
 }
 
@@ -598,7 +612,6 @@ void CManager::SelectSubScreen(int iWinID,int iSubScreen)
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return ;
     }
 
@@ -610,7 +623,6 @@ void CManager::SetFullScreen(int iWinID,int iSubScreenID)
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return ;
     }
 
@@ -622,7 +634,6 @@ void CManager::CancelFullScreen(int iWinID)
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return ;
     }
 
@@ -634,7 +645,6 @@ void CManager::SetTextMoveInfo(int iWinID,int SubScreenID,enMovePolicy enPolicy,
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return ;
     }
 
@@ -646,7 +656,6 @@ void CManager::StartPlay(int iWinID,int iSubScreenID)
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return ;
     }
 
@@ -658,7 +667,6 @@ void CManager::StopPlay(int iWinID, int iSubScreenID)
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
-        //ERROR("UpdateImageData,can't find winid %d",iWinID);
         return ;
     }
 
