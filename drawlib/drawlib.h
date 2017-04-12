@@ -17,13 +17,19 @@ DRAWLIB_DECL int __stdcall Drawlib_Init();
 
 DRAWLIB_DECL void __stdcall Drawlib_Uninit();
 
-DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent,SRect pos,const char* pBGFile,bool bFullScreen = false);
+DRAWLIB_DECL int __stdcall Drawlib_GetMonitorCnt();
+
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen = false);
+
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorNum);
+
+DRAWLIB_DECL int __stdcall Drawlib_CreateFullScreen(int iWinID);
 
 DRAWLIB_DECL int __stdcall Drawlib_SetVideoWindowSize(int iWinID,int iWidth,int iHeight);
 
 DRAWLIB_DECL int __stdcall Drawlib_SetVideoWindowPos(int iWinID,int x,int y);
 
-DRAWLIB_DECL int __stdcall Drawlib_SetSubScreenSize(int iWinID,int SubScreenID,int iWidth,int iHeight);
+DRAWLIB_DECL int __stdcall Drawlib_ResetSubScreenPos(int iWinID,int SubScreenID,SRect Pos);
 
 DRAWLIB_DECL int __stdcall Drawlib_CreateSubScreen(int iWinID,SRect pos);
 
@@ -57,7 +63,5 @@ DRAWLIB_DECL void __stdcall Drawlib_SetTextMoveInfo(int iWinID,int SubScreenID,e
 DRAWLIB_DECL void __stdcall Drawlib_StartPlay(int iWinID,int SubScreenID);
 
 DRAWLIB_DECL void __stdcall Drawlib_StopPlay(int iWinID,int SubScreenID);
-
-DRAWLIB_DECL int __stdcall Start();
 
 #endif

@@ -20,14 +20,14 @@ static GLfloat SelectVerts[] = {-1.0f,1.0f,0.0f,
 
 //纹理坐标
 static GLfloat sTexture[] = {0.0f,0.0f,
-													1.0f,0.0f,
-													0.0f,1.0f,
-													1.0f,1.0f};
+							1.0f,0.0f,
+							0.0f,1.0f,
+							1.0f,1.0f};
 
 static GLfloat fsTexture[] = {0.0f,1.0f,
-													1.0f,1.0f,
-													0.0f,0.0f,
-													1.0f,0.0f};
+							 1.0f,1.0f,
+							 0.0f,0.0f,
+							 1.0f,0.0f};
 
 static GLuint Textures[16] = {0};
 
@@ -74,7 +74,29 @@ void CDraw::SSubSrceenData::Selected(int sharedID)
 CursorPosCallBack CDraw::m_funCursorPos = NULL;
 MouseButtonCallBack CDraw::m_funMouseBtn = NULL;
 
-CDraw::CDraw(ENDrawMode enType):
+CDraw::CDraw() :m_uSubSrceenID(0),
+                m_bStopDraw(false),
+                m_pGlfWindow(NULL),
+                m_iFullSubScreenID(-1),
+                m_bFullSubScreen(false),
+                m_bEnableSelected(false),
+                m_pFullWindows(NULL),
+                m_enType(ENDrawMode_WINDOWS),
+                m_uPBOIndex(0),
+                m_bAlreadySetSize(false),
+                m_bAlreadyOldSize(false),
+                m_bIsCancelFullScreen(false),
+                m_uScreenWidth(0),
+                m_uScreenHeight(0),
+                m_uBGTextureID(0),
+                m_pMonitor(NULL)
+{
+    memset(m_uPBOs, 0, 2 * sizeof(GLuint));
+
+    mtx_init(&m_mutSubscreenList, mtx_plain);
+}
+
+CDraw::CDraw(GLFWmonitor * pMonitor):
                m_uSubSrceenID(0),
                m_bStopDraw(false),
                m_pGlfWindow(NULL),
@@ -82,14 +104,15 @@ CDraw::CDraw(ENDrawMode enType):
                m_bFullSubScreen(false),
                m_bEnableSelected(false),
                m_pFullWindows(NULL),
-               m_enType(enType),
+               m_enType(ENDrawMode_WINDOWS),
                m_uPBOIndex(0),
                m_bAlreadySetSize(false),
                m_bAlreadyOldSize(false),
                m_bIsCancelFullScreen(false),
                m_uScreenWidth(0),
                m_uScreenHeight(0),
-               m_uBGTextureID(0)
+               m_uBGTextureID(0),
+               m_pMonitor(pMonitor)
 {
     memset(m_uPBOs,0,2*sizeof(GLuint));
     
@@ -144,6 +167,17 @@ GLFWwindow* CDraw::GetVideoSrceenHanlde()
     return m_pGlfWindow;
 }
 
+bool CDraw::isStartVideo(unsigned int iSubSrceenID)
+{
+    std::map<unsigned int, SubScreenPtr>::iterator It = m_mapWindowsDatas.find(iSubSrceenID);
+    if (It == m_mapWindowsDatas.end())
+    {
+        return false;
+    }
+
+    return It->second->bBGfalg;
+}
+
 void CDraw::StartDrawVideo(unsigned int iSubscrrenID)
 {
     std::map<unsigned int,SubScreenPtr>::iterator It = m_mapWindowsDatas.find(iSubscrrenID);
@@ -166,11 +200,40 @@ void CDraw::StopDrawVideo(unsigned int iSubscrrenID)
     It->second->bBGfalg = true;
 }
 
+int CDraw::CreateVideoSrceen(SRect rect)
+{
+    LOG_DEBUG << "Enter the function CDraw::CreateVideoSrceen";
+    m_pMonitorMode = glfwGetVideoMode(m_pMonitor);
+    m_VideoSrceenRect.x = 0;
+    m_VideoSrceenRect.y = 0;
+    m_VideoSrceenRect.width = m_pMonitorMode->width;
+    m_VideoSrceenRect.height = m_pMonitorMode->height;
+
+    unsigned int uWidth = m_VideoSrceenRect.width;
+    unsigned int uHeight = m_VideoSrceenRect.height;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_TRUE);
+
+    //glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+    glfwWindowHint(GLFW_AUTO_ICONIFY, GL_FALSE);
+    glfwSetErrorCallback(ErrorInfo);
+
+    m_pGlfWindow = m_pFullWindows = glfwCreateWindow(m_pMonitorMode->width, m_pMonitorMode->height, "", m_pMonitor, NULL);
+    glfwSetWindowSizeCallback(m_pGlfWindow, ChangeSizeFun);
+    glfwSetWindowUserPointer(m_pGlfWindow, this);
+    LOG_DEBUG << "Exit the function CDraw::CreateVideoSrceen";
+
+    return 0;
+}
+
 //获取该对象对应的窗口句柄
 int CDraw::CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen)
 {
     LOG_DEBUG<<"Enter the function CDraw::CreateVideoSrceen1";
-
     m_pMonitor =  glfwGetPrimaryMonitor();
     if (m_pMonitor)
     {
@@ -238,16 +301,19 @@ int CDraw::CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen)
 int CDraw::CreateSubScreen(SRect rect,int SubSrceenID)
 {
 	LOG_DEBUG<<"Enter the function CDraw::CreateSubScreen1";
+    SubScreenPtr pData(new SSubSrceenData);
+
 	std::map<unsigned int,SubScreenPtr>::iterator FindIt = m_mapWindowsDatas.find(SubSrceenID);
-	if (FindIt != m_mapWindowsDatas.end())
-	{//如果已经有了则删掉之
-		LOG_DEBUG<<"Already exsit subsrceen id"<<FindIt->first<<",delete it";
-		DeleteSubScreen(FindIt->second);
-		m_mapWindowsDatas.erase(FindIt);
+    if (FindIt != m_mapWindowsDatas.end())
+    {//如果已经有了则删掉之
+        pData->bBGfalg = FindIt->second->bBGfalg;
+        LOG_DEBUG << "Already exsit subsrceen id" << FindIt->first << ",delete it";
+        DeleteSubScreen(FindIt->second);
+        m_mapWindowsDatas.erase(FindIt);
 	}
 
-	LOG_DEBUG<<"CreateSubScreen with id %d"<<SubSrceenID;
-	SubScreenPtr pData(new SSubSrceenData);
+	LOG_DEBUG<<"CreateSubScreen with id "<<SubSrceenID;
+	
 	if (m_uBGTextureID > 0)
 	{
 		pData->bBGfalg = true;
@@ -767,8 +833,6 @@ int CDraw::DrawPic()
 
                         if ((pSubScreenData->bDisplayText))
                         {
-
-
                              glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(pSubScreenData->SubSrceenPos.width), 0.0f,-1.0f * static_cast<GLfloat>(pSubScreenData->SubSrceenPos.height));
                              glUniformMatrix4fv(glGetUniformLocation(ID, "projectiont"), 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -778,8 +842,7 @@ int CDraw::DrawPic()
                                 {//水平移动
                                     if (pSubScreenData->bGetTextWidthflag)
                                     {
-                                        m_RenderText.GetTextSumWidth(pSubScreenData->pText,pSubScreenData->ScaleSize,
-                                                                    pSubScreenData->fTextSumWidth);
+                                        m_RenderText.GetTextSumWidth(pSubScreenData->pText,pSubScreenData->ScaleSize,pSubScreenData->fTextSumWidth);
                                     }
 
                                     pSubScreenData->bGetTextWidthflag = false;
@@ -885,19 +948,6 @@ int CDraw::SetWindowPos(int x,int y)
     }
 
     glfwSetWindowPos(m_pGlfWindow,x,y);
-    return 0;
-}
-
-int CDraw::ChangeSubscreenSize(int SubsrceenID,int iWidth,int iHeight)
-{
-    std::map<unsigned int,SubScreenPtr>::iterator FindIt = m_mapWindowsDatas.find(SubsrceenID);
-    if (FindIt == m_mapWindowsDatas.end())
-    {
-        return -1;
-    }
-
-    FindIt->second->SubSrceenPos.width = iWidth;
-    FindIt->second->SubSrceenPos.height = iHeight;
     return 0;
 }
 

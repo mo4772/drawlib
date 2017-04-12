@@ -7,6 +7,7 @@
 #include "glfw3.h"
 #include "glfw3native.h"
 #include "baselib/log.h"
+#include "log.h"
 
 static GLfloat VC[]={0.0, 0.0,
                     0.0, 1.0,

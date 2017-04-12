@@ -1,6 +1,7 @@
 #include "manager.h"
-#include "log.h"
-
+#ifdef WIN32
+#define LOGDIR ".\\log"
+#endif
 CManager* CManager::m_pInstance = NULL;
 
 CManager* CManager::GetInstance()
@@ -24,16 +25,23 @@ void CManager::Release()
 
 int CManager::Init()
 {
-//     google::InitGoogleLogging("drawlib");
-//     //FLAGS_stderrthreshold = google::GLOG_INFO;
-//     //FLAGS_colorlogtostderr = true;
-//     //FLAGS_log_dir = ".";
-//     google::SetLogDestination(google::GLOG_INFO, "./log/drawlib.log");
-//     FLAGS_logbuflevel = -1;
-
     if (!glfwInit())
     {
         return -1;
+    }
+
+    int iMonitorCnt = 0;
+    GLFWmonitor **pMonitors = glfwGetMonitors(&iMonitorCnt);
+    for (int i = 0; i < iMonitorCnt; ++i)
+    {
+        SMonitorInfo monitorInfo;
+        monitorInfo.iSeqNo = i;
+        monitorInfo.pMonior = pMonitors[i];
+        int iCount = 0;
+        const GLFWvidmode *pVideoMode = glfwGetVideoMode(monitorInfo.pMonior);
+        monitorInfo.iMaxWidth = pVideoMode->width;
+        monitorInfo.iMaxHeight = pVideoMode->height;
+        m_vecMonitorInfos.push_back(monitorInfo);
     }
 
     mtx_init(&m_mutCreateWindow,mtx_plain);
@@ -42,16 +50,18 @@ int CManager::Init()
     mtx_init(&m_mutCreateDraw,mtx_plain);
     cnd_init(&m_cndCreateDraw);
 
+#ifdef WIN32
+    google::InitGoogleLogging("drawlib");
+    google::SetLogDestination(google::GLOG_INFO, LOGDIR"/Drawlib_INFO_");
+    google::SetLogDestination(google::GLOG_ERROR, LOGDIR"/Drawlib_ERROR_");
+    google::SetStderrLogging(google::GLOG_INFO);
+    FLAGS_logtostderr = false;
+    FLAGS_logbufsecs = 0;
+    FLAGS_max_log_size = 100;
+    FLAGS_stop_logging_if_full_disk = true;
+#endif
     m_vecSubScreenID.reserve(MAX_SUBSRCEEN_CNT);
     m_vecSubScreenID.resize(MAX_SUBSRCEEN_CNT);
-
-    //初始化日志
-//     std::string strLogPath = ".\\";
-//     std::string strMoudleName = "drawlib";
-//     INIT_LOG(strLogPath,strMoudleName);
-//     CLog::GetInstance()->SetLogLevel(LogLevelDebug);
-
-    //DEBUG("======>Init success");
 
     return 0;
 }
@@ -81,9 +91,13 @@ CManager::~CManager()
     }
 }
 
-int CManager::CreateVideoWindows(void *parent,SRect pos,const char* pBGFile,bool bFullScreen)
+int CManager::GetMonitorCnt()
 {
-    //DEBUG("Create window pos(x:%d,y:%d,w:%d,h:%d)",pos.x,pos.y,pos.width,pos.height);
+    return m_vecMonitorInfos.size();
+}
+
+int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen)
+{
     if (m_mapVideoWindows.size() > 1)
     {
         //ERROR("Not allow create more than one windows");
@@ -96,6 +110,42 @@ int CManager::CreateVideoWindows(void *parent,SRect pos,const char* pBGFile,bool
     pData->pDraw = new CDraw;
 #ifdef WIN32
     pData->pParent = (HWND*)parent;
+#endif
+    pData->pDraw->SetScreenWH(pos.width, pos.height);
+    if (NULL != pBGFile)
+    {
+        pData->pDraw->m_strBG = pBGFile;
+    }
+
+    m_mapVideoWindows.insert(std::make_pair(m_iWndID, pData));
+
+    StartWithFull();
+    //DEBUG("Return window with id %d",m_iWndID);
+    return m_iWndID++;
+}
+
+int CManager::CreateVideoWindows(SRect pos,const char* pBGFile,int iMonitorNum)
+{
+    //DEBUG("Create window pos(x:%d,y:%d,w:%d,h:%d)",pos.x,pos.y,pos.width,pos.height);
+    if (m_mapVideoWindows.size() > 1)
+    {
+        //ERROR("Not allow create more than one windows");
+        return -1;
+    }
+
+    if (iMonitorNum <0 || iMonitorNum > m_vecMonitorInfos.size())
+    {
+        return -1;
+    }
+
+    SWindowData *pData = new SWindowData;
+    pData->pos = pos;
+    pData->bFullScreen = true;
+    pData->pDraw = new CDraw(m_vecMonitorInfos[iMonitorNum].pMonior);
+    m_iCurrUseMonitorSeq = iMonitorNum;
+
+#ifdef WIN32
+    pData->pParent = NULL;
 #endif
     pData->pDraw->SetScreenWH(pos.width,pos.height);
     if (NULL != pBGFile)
@@ -133,7 +183,7 @@ int CManager::SetVideoWindowPos(int iWindID,int x,int y)
     return 0;
 }
 
-int CManager::ChangeSubscreenSize(int iWindID,int iSubScreenID,int iWidth,int iHeight)
+int CManager::ChangeSubscreenPos(int iWindID,int iSubScreenID, SRect Pos)
 {
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWindID);
     if (FindIt == m_mapVideoWindows.end())
@@ -141,8 +191,66 @@ int CManager::ChangeSubscreenSize(int iWindID,int iSubScreenID,int iWidth,int iH
         return -1;
     }
 
-    FindIt->second->pDraw->ChangeSubscreenSize(iSubScreenID,iWidth,iHeight);
+    SWindowData::SSubScreenPosPtr pSubData(new SWindowData::SSubScreenData);
+    pSubData->iSubSrceenID = iSubScreenID;
+    pSubData->rect = Pos;
+
+    mtx_lock(&FindIt->second->m_mutCreateScreen);
+    FindIt->second->deqSubSrceenPos.push_back(pSubData);
+    mtx_unlock(&FindIt->second->m_mutCreateScreen);
+
+    cnd_wait(&pSubData->cndCreateScreen, &pSubData->mtxCreateScreen);
+    
     return 0;
+}
+
+int CManager::CreateFullScreen(int iWindID)
+{
+    std::map<int, SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWindID);
+    if (FindIt == m_mapVideoWindows.end())
+    {
+        //ERROR("Can;t find winid %d",winID);
+        return -1;
+    }
+
+    SWindowData::SSubScreenPosPtr pSubData(new SWindowData::SSubScreenData);
+
+    bool bHaveID = false;
+    //分配视口ID
+    for (int i = 0; i < MAX_SUBSRCEEN_CNT; ++i)
+    {
+        if (0 == m_vecSubScreenID[i])
+        {
+            pSubData->iSubSrceenID = i;
+            m_vecSubScreenID[i] = 1;
+            bHaveID = true;
+            break;
+        }
+    }
+
+    if (!bHaveID)
+    {
+        //ERROR("Already create max cnt subscreen");
+        return -1;
+    }
+
+    SRect pos;
+    pos.x = 0;
+    pos.y = 0;
+    pos.width = m_vecMonitorInfos[m_iCurrUseMonitorSeq].iMaxWidth;
+    pos.height = m_vecMonitorInfos[m_iCurrUseMonitorSeq].iMaxHeight;
+
+    pSubData->rect = pos;
+
+    mtx_lock(&FindIt->second->m_mutCreateScreen);
+    FindIt->second->deqSubSrceenPos.push_back(pSubData);
+    mtx_unlock(&FindIt->second->m_mutCreateScreen);
+
+    cnd_wait(&pSubData->cndCreateScreen, &pSubData->mtxCreateScreen);
+
+    /*++m_iGenerSubScreenID;*/
+    //DEBUG("The subsrceen id is %d",pSubData->iSubSrceenID);
+    return pSubData->iSubSrceenID;
 }
 
 int CManager::CreateSubScreen(int winID,SRect pos)
@@ -262,6 +370,53 @@ void CManager::PrintFrameRate(int winID,int iScreenID,bool bEnable)
     return FindIt->second->pDraw->PrintFrameRate(iScreenID,bEnable);
 }
 
+int CManager::WindThreadForFull(void *arg)
+{
+    //DEBUG("=====>Start windThread");
+    CManager *pData = (CManager*)arg;
+
+    //创建主窗口
+    std::map<int, SWindowData*>::iterator SIt = pData->m_mapVideoWindows.begin();
+    for (; SIt != pData->m_mapVideoWindows.end(); ++SIt)
+    {
+#ifdef WIN32
+       
+        if (-1 == SIt->second->pDraw->CreateVideoSrceen(SIt->second->pos))
+#else
+        if (-1 == SIt->second->pDraw->CreateVideoSrceen(SIt->second->pos))
+#endif
+        {
+            //ERROR("Create video srceen failed");
+            return -1;
+        }
+    }
+
+    cnd_signal(&(pData->m_cndCreateDraw));
+    while (pData->m_bRunning)
+    {
+        std::map<int, SWindowData*>::iterator It = pData->m_mapVideoWindows.begin();
+        for (; It != pData->m_mapVideoWindows.end(); ++It)
+        {
+            if (NULL == It->second->pDraw)
+            {
+                //ERROR("win id %d draw pointer is NULL",It->first);
+                continue;
+            }
+
+            if (!It->second->bNeedToClose && glfwWindowShouldClose(It->second->pDraw->GetVideoSrceenHanlde()))
+            {//释放该窗口的资源
+                It->second->bNeedToClose = true;
+                glfwDestroyWindow(It->second->pDraw->GetVideoSrceenHanlde());
+            }
+        }
+
+        glfwWaitEvents();
+    }
+
+    //DEBUG("=====>End windThread");
+    return 0;
+}
+
 int CManager::WindThread(void *arg)
 {
     //DEBUG("=====>Start windThread");
@@ -273,8 +428,10 @@ int CManager::WindThread(void *arg)
     {
 #ifdef WIN32
         if (-1 == SIt->second->pDraw->CreateVideoSrceen(SIt->second->pParent,SIt->second->pos,SIt->second->bFullScreen))
+        //if (-1 == SIt->second->pDraw->CreateVideoSrceen(SIt->second->pos))
 #else
         if (-1 == SIt->second->pDraw->CreateVideoSrceen(NULL,SIt->second->pos,SIt->second->bFullScreen))
+        //if (-1 == SIt->second->pDraw->CreateVideoSrceen(SIt->second->pos))
 #endif
         {
             //ERROR("Create video srceen failed");
@@ -382,6 +539,22 @@ int CManager::Start()
     }
 
     return 0;
+}
+
+int CManager::StartWithFull()
+{
+    thrd_create(&m_ManagerThrdID, WindThread, this);
+    //等待窗口创建完毕
+    cnd_wait(&m_cndCreateDraw, &m_mutCreateDraw);
+    std::map<int, SWindowData*>::iterator SIt = m_mapVideoWindows.begin();
+    for (; SIt != m_mapVideoWindows.end(); ++SIt)
+    {
+        thrd_create(&SIt->second->threadID, DrawThread, SIt->second);
+        cnd_wait(&SIt->second->m_cndSubScreen, &SIt->second->m_mutSubScreen);
+    }
+
+    return 0;
+
 }
 
 void CManager::SetMousBtnActionCallback(int iWinID,MouseButtonCallBack f)

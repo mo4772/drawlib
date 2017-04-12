@@ -4,6 +4,15 @@
 #include <map>
 #include "draw.h"
 #include "typedefine.h"
+#include "log.h"
+
+struct SMonitorInfo
+{
+    int iSeqNo;
+    GLFWmonitor *pMonior;
+    int iMaxWidth;
+    int iMaxHeight;
+};
 
 #define MAX_SUBSRCEEN_CNT 16
 class CManager
@@ -13,17 +22,20 @@ class CManager
         static void Release();
 
         int Init();
-    
-
     public:
+
+        int GetMonitorCnt();
         //创建一个视频窗口
-        int CreateVideoWindows(void *parent,SRect pos,const char* pBGFile,bool bFullScreen);
+        int CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen);
+        int CreateVideoWindows(SRect pos,const char* pBGFile, int iMonitorNum);
         int SetVideoWindowSize(int iWinID,int iWidth,int iHeight);
         int SetVideoWindowPos(int iWindID,int x,int y);
 
         //设置子窗口的大小
-        int ChangeSubscreenSize(int iWindID,int iSubScreenID,int iWidth,int iHeight);
+        int ChangeSubscreenPos(int iWindID,int iSubScreenID,SRect Pos);
 
+        //创建一个全屏的子窗口
+        int CreateFullScreen(int iWindID);
         //创建一个子窗口
         int CreateSubScreen(int winID,SRect pos);
         int DeleteSubScreen(int iWinID,int iSubScreenID);
@@ -58,9 +70,11 @@ class CManager
         void StopPlay(int iWinID, int iSubScreenID);
         //开始渲染所有的窗口视频
         int Start();
+        int StartWithFull();
 
     private:
         static int WindThread(void *arg);
+        static int WindThreadForFull(void *arg);
         static int DrawThread(void *arg);
 
     private:
@@ -158,8 +172,11 @@ class CManager
         int m_iGenerSubScreenID;
 
         /*unsigned int *m_pSubScreenID;*/
+        //用于分配subscreen id
         std::vector<unsigned int> m_vecSubScreenID;
         
+        std::vector<SMonitorInfo> m_vecMonitorInfos;
+        int m_iCurrUseMonitorSeq;
 };
 
 #endif

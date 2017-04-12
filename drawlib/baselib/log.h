@@ -1,8 +1,9 @@
 #ifndef LOG_H
 #define LOG_H
-#define  GLOG_NO_ABBREVIATED_SEVERITIES
+
 
 #ifdef WIN32
+#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
 #else
 #include <glog/logging.h>

@@ -6,9 +6,21 @@ DRAWLIB_DECL int __stdcall Drawlib_Init()
     return CManager::GetInstance()->Init();
 }
 
-DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent,SRect pos,const char* pBGFile,bool bFullScreen)
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen)
 {
-    return CManager::GetInstance()->CreateVideoWindows(parent,pos,pBGFile,bFullScreen);
+    return CManager::GetInstance()->CreateVideoWindows(parent, pos, pBGFile, bFullScreen);
+}
+
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorNum)
+{
+    SRect pos;
+    pos.x = pos.y = pos.width = pos.height = 0;
+    return CManager::GetInstance()->CreateVideoWindows(pos,pBGFile, iMonitorNum);
+}
+
+DRAWLIB_DECL int __stdcall Drawlib_CreateFullScreen(int iWinID)
+{
+    return CManager::GetInstance()->CreateFullScreen(iWinID);
 }
 
 DRAWLIB_DECL int __stdcall Drawlib_SetVideoWindowSize(int iWinID,int iWidth,int iHeight)
@@ -21,9 +33,9 @@ DRAWLIB_DECL int __stdcall Drawlib_SetVideoWindowPos(int iWinID,int x,int y)
     return CManager::GetInstance()->SetVideoWindowPos(iWinID,x,y);
 }
 
-DRAWLIB_DECL int __stdcall Drawlib_SetSubScreenSize(int iWinID,int SubScreenID,int iWidth,int iHeight)
+DRAWLIB_DECL int __stdcall Drawlib_ResetSubScreenPos(int iWinID,int SubScreenID,SRect Pos)
 {
-    return CManager::GetInstance()->ChangeSubscreenSize(iWinID,SubScreenID,iWidth,iHeight);
+    return CManager::GetInstance()->ChangeSubscreenPos(iWinID,SubScreenID, Pos);
 }
 
 DRAWLIB_DECL int __stdcall Drawlib_CreateSubScreen(int iWinID,SRect pos)
@@ -47,14 +59,14 @@ DRAWLIB_DECL int __stdcall Drawlib_UpdateImageData(int iWinID,
     return CManager::GetInstance()->UpdateImageData(iWinID,SubScreenID,pData,iWidth,iHeight,iSize);
 }
 
-// DRAWLIB_DECL int __stdcall Start()
-// {
-//     return CManager::GetInstance()->Start();
-// }
-
 DRAWLIB_DECL void __stdcall Drawlib_Uninit()
 {
     CManager::GetInstance()->Release();
+}
+
+DRAWLIB_DECL int __stdcall Drawlib_GetMonitorCnt()
+{
+    return CManager::GetInstance()->GetMonitorCnt();
 }
 
 DRAWLIB_DECL int __stdcall Drawlib_SetSubSrceenVideoText(int iWinID,int iSubScreenID,SVideoTextInfo *pTextInfo)

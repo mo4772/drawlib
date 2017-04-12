@@ -29,7 +29,8 @@ class CDraw
 {
     
     public:
-        CDraw(ENDrawMode enType = ENDrawMode_WINDOWS);
+        CDraw();
+        CDraw(GLFWmonitor *pMonitors);
         ~CDraw();
 
 
@@ -47,9 +48,12 @@ class CDraw
         GLFWwindow *GetVideoSrceenHanlde();
         void StartDrawVideo(unsigned int iSubscrrenID);
         void StopDrawVideo(unsigned int iSubscrrenID);
+        bool isStartVideo(unsigned int iSubSrceenID);
+        int CreateVideoSrceen(SRect rect);
         int CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen);
         int CreateSubScreen(SRect rect,int SubSrceenID);
         int DeleteSubScreen(int SubSrceenID);
+        int ChangeSubScreenPos(SRect rect, int SubSrceenID);
         int ModifySubScreenSize(int SubSrceenID,int iWidth,int iHeight);
 
         //ÊÓÆµ×ÖÄ»Ïà¹Ø
