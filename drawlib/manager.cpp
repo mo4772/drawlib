@@ -40,7 +40,6 @@ int CManager::Init()
         SMonitorInfo monitorInfo;
         monitorInfo.iSeqNo = i;
         monitorInfo.pMonior = pMonitors[i];
-        int iCount = 0;
         const GLFWvidmode *pVideoMode = glfwGetVideoMode(monitorInfo.pMonior);
         monitorInfo.iMaxWidth = pVideoMode->width;
         monitorInfo.iMaxHeight = pVideoMode->height;
@@ -103,9 +102,10 @@ int CManager::GetMonitorCnt()
     return m_vecMonitorInfos.size();
 }
 
-int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen)
+int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex, bool bFullScreen)
 {
     LOG_DEBUG << "Enter the function CManager::CreateVideoWindows";
+    LOG_DEBUG << "choose monitor index " << iMonitorIndex << " for display";
     LOG_DEBUG << "create window,x:" << pos.x << ",y:" << pos.y << ",width:" << pos.width << ",height:" << pos.height;
     if (m_mapVideoWindows.size() > 1)
     {
@@ -113,10 +113,17 @@ int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, b
         return -1;
     }
 
+    if (iMonitorIndex <0 || iMonitorIndex >= m_vecMonitorInfos.size())
+    {
+        LOG_ERROR << "invalid monitor index " << iMonitorIndex;
+        return -1;
+    }
+
     SWindowData *pData = new SWindowData;
     pData->pos = pos;
     pData->bFullScreen = bFullScreen;
-    pData->pDraw = new CDraw;
+    pData->pDraw = new CDraw(m_vecMonitorInfos[iMonitorIndex].pMonior);
+    m_iCurrUseMonitorSeq = iMonitorIndex;
 #ifdef WIN32
     pData->pParent = (HWND*)parent;
 #endif
@@ -132,27 +139,27 @@ int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, b
     LOG_DEBUG << "Exit the function CManager::CreateVideoWindows";
     return m_iWndID++;
 }
-
-int CManager::CreateVideoWindows(SRect pos,const char* pBGFile,int iMonitorNum)
+    
+int CManager::CreateVideoWindows(SRect pos,const char* pBGFile,int iMonitorIndex)
 {
     LOG_DEBUG << "Enter the function CManager::CreateVideoWindows";
-    LOG_DEBUG << "choose monitor num " << iMonitorNum << " for display";
+    LOG_DEBUG << "choose monitor num " << iMonitorIndex << " for display";
     if (m_mapVideoWindows.size() > 1)
     {
-        //ERROR("Not allow create more than one windows");
         return -1;
     }
 
-    if (iMonitorNum <0 || iMonitorNum > m_vecMonitorInfos.size())
+    if (iMonitorIndex <0 || iMonitorIndex >= m_vecMonitorInfos.size())
     {
+        LOG_ERROR << "invalid monitor index " << iMonitorIndex;
         return -1;
     }
 
     SWindowData *pData = new SWindowData;
     pData->pos = pos;
     pData->bFullScreen = true;
-    pData->pDraw = new CDraw(m_vecMonitorInfos[iMonitorNum].pMonior);
-    m_iCurrUseMonitorSeq = iMonitorNum;
+    pData->pDraw = new CDraw(m_vecMonitorInfos[iMonitorIndex].pMonior);
+    m_iCurrUseMonitorSeq = iMonitorIndex;
 
 #ifdef WIN32
     pData->pParent = NULL;
@@ -557,7 +564,7 @@ int CManager::Start()
 
 int CManager::StartWithFull()
 {
-    thrd_create(&m_ManagerThrdID, WindThread, this);
+    thrd_create(&m_ManagerThrdID, WindThreadForFull, this);
     //等待窗口创建完毕
     cnd_wait(&m_cndCreateDraw, &m_mutCreateDraw);
     std::map<int, SWindowData*>::iterator SIt = m_mapVideoWindows.begin();

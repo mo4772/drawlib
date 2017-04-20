@@ -203,6 +203,12 @@ void CDraw::StopDrawVideo(unsigned int iSubscrrenID)
 int CDraw::CreateVideoSrceen(SRect rect)
 {
     LOG_DEBUG << "Enter the function CDraw::CreateVideoSrceen";
+    if (NULL == m_pMonitor)
+    {
+        LOG_ERROR << "can't get monitor for display";
+        return -1;
+    }
+
     m_pMonitorMode = glfwGetVideoMode(m_pMonitor);
     m_VideoSrceenRect.x = 0;
     m_VideoSrceenRect.y = 0;
@@ -234,12 +240,15 @@ int CDraw::CreateVideoSrceen(SRect rect)
 int CDraw::CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen)
 {
     LOG_DEBUG<<"Enter the function CDraw::CreateVideoSrceen1";
-    m_pMonitor =  glfwGetPrimaryMonitor();
-    if (m_pMonitor)
+    LOG_DEBUG << "is full screen " << bFullScreen;
+
+    if (NULL == m_pMonitor)
     {
-        m_pMonitorMode = glfwGetVideoMode(m_pMonitor);
+        LOG_ERROR << "can't get monitor for display";
+        return -1;
     }
 
+    m_pMonitorMode = glfwGetVideoMode(m_pMonitor);
     if (bFullScreen)
     {
         m_VideoSrceenRect.x = 0;
@@ -269,15 +278,21 @@ int CDraw::CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen)
 
     if (bFullScreen)
     {
+        LOG_DEBUG << "create full windows," << "width " << uWidth << ",height " << uHeight;
+        if (!m_pMonitor)
+        {
+            LOG_DEBUG << "monitor point is NULL";
+        }
+
+        LOG_DEBUG << "monitor mode width " << m_pMonitorMode->width << ",height " << m_pMonitorMode->height;
         m_pGlfWindow = m_pFullWindows = glfwCreateWindow(m_pMonitorMode->width,m_pMonitorMode->height,"",m_pMonitor,NULL);
     }
     else
     {
-        m_VideoSrceenRect = rect;
-        m_pGlfWindow = glfwCreateWindow(uWidth,uHeight,"",NULL,NULL);
+        m_pGlfWindow = glfwCreateWindow(uWidth,uHeight,"", NULL, NULL);
         if (!m_pGlfWindow)
         {
-            LOG_ERROR<<"glfwCreateWindow reutern failed";
+            LOG_ERROR<<"glfwCreateWindow return failed";
             return -1;
         }
 

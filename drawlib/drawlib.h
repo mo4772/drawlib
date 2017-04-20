@@ -24,9 +24,9 @@ DRAWLIB_DECL void __stdcall Drawlib_Uninit();
 
 DRAWLIB_DECL int __stdcall Drawlib_GetMonitorCnt();
 
-DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen = false);
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex,bool bFullScreen = false);
 
-DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorNum);
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorIndex);
 
 DRAWLIB_DECL int __stdcall Drawlib_CreateFullScreen(int iWinID);
 

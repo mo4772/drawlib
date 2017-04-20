@@ -26,8 +26,8 @@ class CManager
 
         int GetMonitorCnt();
         //创建一个视频窗口
-        int CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen);
-        int CreateVideoWindows(SRect pos,const char* pBGFile, int iMonitorNum);
+        int CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex, bool bFullScreen);
+        int CreateVideoWindows(SRect pos,const char* pBGFile, int iMonitorIndex);
         int SetVideoWindowSize(int iWinID,int iWidth,int iHeight);
         int SetVideoWindowPos(int iWindID,int x,int y);
 

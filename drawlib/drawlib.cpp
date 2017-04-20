@@ -6,16 +6,16 @@ DRAWLIB_DECL int __stdcall Drawlib_Init()
     return CManager::GetInstance()->Init();
 }
 
-DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, bool bFullScreen)
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex,bool bFullScreen)
 {
-    return CManager::GetInstance()->CreateVideoWindows(parent, pos, pBGFile, bFullScreen);
+    return CManager::GetInstance()->CreateVideoWindows(parent, pos, pBGFile, iMonitorIndex, bFullScreen);
 }
 
-DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorNum)
+DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorIndex)
 {
     SRect pos;
     pos.x = pos.y = pos.width = pos.height = 0;
-    return CManager::GetInstance()->CreateVideoWindows(pos,pBGFile, iMonitorNum);
+    return CManager::GetInstance()->CreateVideoWindows(pos,pBGFile, iMonitorIndex);
 }
 
 DRAWLIB_DECL int __stdcall Drawlib_CreateFullScreen(int iWinID)
