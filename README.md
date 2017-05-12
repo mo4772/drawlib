@@ -1,5 +1,5 @@
 # drawlib
-drawlib是基于opengl的一个跨平台实时视频流显示库.视频流经过解码为rgb数据后可以直接交由drawlib显示.其提供了以下功能:
+drawlib是基于opengl的一个跨平台(windows和linux)实时视频流显示库，其很容易移植到opengl es上，从而支持ios和android平台。视频流经过解码为rgb数据后可以直接交由drawlib显示，其提供了以下功能：
 <ol>
 <li>在windows下，可以为显示窗口指定一个父窗口句柄，从而将显示功能嵌入应用中</li>
 <li>可以分屏显示，每个子分屏播放不同的画面</li>
