@@ -1,3 +1,4 @@
+#include <ctime>
 #include <iostream>
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -135,14 +136,29 @@ int CDraw::UpdateSubScreenImage(unsigned int ID,
                                 unsigned int iHeigth,
                                 unsigned int iSize)
 {
+    std::clock_t start = clock();
+
     std::map<unsigned int,SubScreenPtr>::iterator It = m_mapWindowsDatas.find(ID);
     if (It == m_mapWindowsDatas.end())
     {
         return -1;
     }
     
+    //LOG_DEBUG << "+++ UpdateSubScreenImage " << ID;
     SubScreenPtr &pSubScreen = It->second;
-    
+    double elapsedTime = pSubScreen->m_PushFPSTimer.getElapsedTime();
+    if (elapsedTime < 1.0)
+    {
+        ++pSubScreen->m_PushFPSCount;
+    }
+    else
+    {
+        //LOG_IF(ERROR, m_FPSCount == 0)<<"subscreen id:"<<ID<<" no image data";
+        //LOG_DEBUG << "++++++++++++subscreen id :" << ID << ",fps:" << pSubScreen->m_PushFPSCount;
+        pSubScreen->m_PushFPSCount = 0;
+        pSubScreen->m_PushFPSTimer.start();
+    }
+
     if (!pSubScreen->bBGfalg)
     {//如果是画背景图，则不会往队列中放数据
         SVideoData *pVideoData = new SVideoData;
@@ -159,6 +175,8 @@ int CDraw::UpdateSubScreenImage(unsigned int ID,
         pSubScreen->pDatas.PutData(Data);
     }
 
+    std::clock_t end = clock();
+    //LOG_DEBUG << "cost " << (double)(end - start) / CLOCKS_PER_SEC << "s";
     return 0;
 }
 
@@ -175,7 +193,7 @@ bool CDraw::isStartVideo(unsigned int iSubSrceenID)
         return false;
     }
 
-    return It->second->bBGfalg;
+    return It->second->bAlreadyStart;
 }
 
 void CDraw::StartDrawVideo(unsigned int iSubscrrenID)
@@ -183,10 +201,12 @@ void CDraw::StartDrawVideo(unsigned int iSubscrrenID)
     std::map<unsigned int,SubScreenPtr>::iterator It = m_mapWindowsDatas.find(iSubscrrenID);
     if (It == m_mapWindowsDatas.end())
     {
+        LOG_ERROR << "can't find subscreen id " << iSubscrrenID;
         return ;
     }
     
     It->second->bBGfalg = false;
+    It->second->bAlreadyStart = true;
 }
 
 void CDraw::StopDrawVideo(unsigned int iSubscrrenID)
@@ -194,10 +214,12 @@ void CDraw::StopDrawVideo(unsigned int iSubscrrenID)
     std::map<unsigned int,SubScreenPtr>::iterator It = m_mapWindowsDatas.find(iSubscrrenID);
     if (It == m_mapWindowsDatas.end())
     {
+        LOG_ERROR << "can't find subscreen id " << iSubscrrenID;
         return ;
     }
 
     It->second->bBGfalg = true;
+    It->second->bAlreadyStart = false;
 }
 
 int CDraw::CreateVideoSrceen(SRect rect)
@@ -413,9 +435,9 @@ int CDraw::CreateSubScreen(SRect rect,int SubSrceenID)
 	return 0;
 }
 
-int CDraw::DeleteSubScreen(int SubSrceenID)
+int CDraw::DeleteSubScreen(int SubScreenID)
 {
-    std::map<unsigned int,SubScreenPtr>::iterator FindIt = m_mapWindowsDatas.find(SubSrceenID);
+    std::map<unsigned int,SubScreenPtr>::iterator FindIt = m_mapWindowsDatas.find(SubScreenID);
     if (FindIt == m_mapWindowsDatas.end())
     {
         return -1;
@@ -1035,7 +1057,7 @@ bool CDraw::ChangeToFullDraw()
         m_RenderText.RenderText(ID,
                                 pSubScreenData->pText,
                                 pSubScreenData->xPos, 
-                                pSubScreenData->yPos, 
+                                pSubScreenData->yPos,
                                 pSubScreenData->ScaleSize,
                                 glm::vec3(pSubScreenData->r, 
                                 pSubScreenData->g, 

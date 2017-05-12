@@ -53,7 +53,7 @@ class CDraw
         int CreateVideoSrceen(SRect rect);
         int CreateVideoSrceen(void *parent,SRect rect,bool bFullScreen);
         int CreateSubScreen(SRect rect,int SubSrceenID);
-        int DeleteSubScreen(int SubSrceenID);
+        int DeleteSubScreen(int SubScreenID);
         int ChangeSubScreenPos(SRect rect, int SubSrceenID);
         int ModifySubScreenSize(int SubSrceenID,int iWidth,int iHeight);
 
@@ -159,6 +159,7 @@ class CDraw
                 uPBOIndex = 0;
                 bvalid = true;
                 m_FPSCount = 0;
+                m_PushFPSCount = 0;
                 //pText = NULL;
                 bDisplayText = false;
                 r = 255.0f;
@@ -176,13 +177,14 @@ class CDraw
                 fYMove = 0.0f;
                 fTextSumWidth = 0.0f;
                 bBGfalg = true;
+                bAlreadyStart = false;
                 //移动的方式(垂直或水平移动)
                 MovePolicy = enMovePolicy_NotMove;
                 memset(pText,0,STR_LEN);
                 bGetTextWidthflag = true;
 
-                mtx_init(&m_mtxDataDeque,mtx_plain);
-                cnd_init(&m_cndDataDeque);
+                mtx_init(&m_mtxDeleteSubscreen,mtx_plain);
+                cnd_init(&m_cndDeletSubscreen);
             }
 
             ~SSubSrceenData()
@@ -219,6 +221,7 @@ class CDraw
                 else
                 {
                     LOG_IF(ERROR, m_FPSCount == 0)<<"subscreen id:"<<ID<<" no image data";
+                    //LOG_DEBUG << "subscreen id :" << ID << ",fps:" << m_FPSCount;
                     m_FPSCount = 0;
                     m_FPSTimer.start();
                 }
@@ -262,6 +265,9 @@ class CDraw
             Timer m_FPSTimer;
             int m_FPSCount;
 
+            Timer m_PushFPSTimer;
+            int m_PushFPSCount;
+
             //字幕移动相关
             bool bTextMove;
             GLfloat fRate;
@@ -274,10 +280,11 @@ class CDraw
             bool bGetTextWidthflag;
 
             //释放数据队列的条件变量与互斥量
-            mtx_t m_mtxDataDeque;
-            cnd_t m_cndDataDeque;
+            mtx_t m_mtxDeleteSubscreen;
+            cnd_t m_cndDeletSubscreen;
 
             CPCDeque pDatas;
+            bool bAlreadyStart;
         };
 
         typedef boost::shared_ptr<SSubSrceenData> SubScreenPtr;

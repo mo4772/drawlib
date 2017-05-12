@@ -102,6 +102,21 @@ int CManager::GetMonitorCnt()
     return m_vecMonitorInfos.size();
 }
 
+int CManager::GetMonitorWH(int iMonitorIndex, int &iWidth, int &iHeight)
+{
+    if (iMonitorIndex < 0 || iMonitorIndex >= m_vecMonitorInfos.size())
+    {
+        LOG_ERROR << "invalid monitor index " << iMonitorIndex;
+        return -1;
+    }
+
+    SMonitorInfo monitorInfo = m_vecMonitorInfos[iMonitorIndex];
+    iWidth = monitorInfo.iMaxWidth;
+    iHeight = monitorInfo.iMaxHeight;
+
+    return 0;
+}
+
 int CManager::CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex, bool bFullScreen)
 {
     LOG_DEBUG << "Enter the function CManager::CreateVideoWindows";
@@ -658,25 +673,44 @@ void CManager::SetTextMoveInfo(int iWinID,int SubScreenID,enMovePolicy enPolicy,
     FindIt->second->pDraw->SetTextMoveInfo(SubScreenID,enPolicy,fRate);
 }
 
+bool CManager::isStartVideo(int iWinID, int iSubScreenID)
+{
+    std::map<int, SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
+    if (FindIt == m_mapVideoWindows.end())
+    {
+        return false;
+    }
+
+    return FindIt->second->pDraw->isStartVideo(iSubScreenID);
+}
+
 void CManager::StartPlay(int iWinID,int iSubScreenID)
 {
+    LOG_DEBUG << "Enter the function CManager::StartPlay";
+    LOG_DEBUG << "win id " << iWinID << ",subscreen id " << iSubScreenID;
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
+        LOG_ERROR << "can't find win id " << iWinID;
         return ;
     }
 
     FindIt->second->pDraw->StartDrawVideo(iSubScreenID);
+    LOG_DEBUG << "Exit the funtion CManager::StartPlay";
 }
 
 void CManager::StopPlay(int iWinID, int iSubScreenID)
 {
+    LOG_DEBUG << "Enter the function CManager::StopPlay";
+    LOG_DEBUG << "win id " << iWinID << ",subscreen id " << iSubScreenID;
     std::map<int,SWindowData*>::iterator FindIt = m_mapVideoWindows.find(iWinID);
     if (FindIt == m_mapVideoWindows.end())
     {
+        LOG_ERROR << "can't find win id " << iWinID;
         return ;
     }
 
     FindIt->second->pDraw->StopDrawVideo(iSubScreenID);
+    LOG_DEBUG << "Exit the function CManager::StopPlay";
 }
 

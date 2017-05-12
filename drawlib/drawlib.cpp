@@ -6,10 +6,16 @@ DRAWLIB_DECL int __stdcall Drawlib_Init()
     return CManager::GetInstance()->Init();
 }
 
+DRAWLIB_DECL int __stdcall Drawlib_GetMonitorWH(int iMonitorIndex, int *Width, int *Height)
+{
+    return CManager::GetInstance()->GetMonitorWH(iMonitorIndex,*Width, *Height);
+}
+
 DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex,bool bFullScreen)
 {
     return CManager::GetInstance()->CreateVideoWindows(parent, pos, pBGFile, iMonitorIndex, bFullScreen);
 }
+
 
 DRAWLIB_DECL int __stdcall Drawlib_CreateVideoWindowsWithFull(const char* pBGFile, int iMonitorIndex)
 {
@@ -35,7 +41,27 @@ DRAWLIB_DECL int __stdcall Drawlib_SetVideoWindowPos(int iWinID,int x,int y)
 
 DRAWLIB_DECL int __stdcall Drawlib_ResetSubScreenPos(int iWinID,int SubScreenID,SRect Pos)
 {
-    return CManager::GetInstance()->ChangeSubscreenPos(iWinID,SubScreenID, Pos);
+    LOG_DEBUG << "Enter the function ResetSubScreenPos";
+    LOG_DEBUG << "WinID:" << iWinID << ",SubScreenID:" << SubScreenID<<" x:"<<Pos.x<<" y:"<<Pos.y<<" w:"<<Pos.width<<" h:"<<Pos.height;
+    bool bNeedToRestart = false;
+    if (CManager::GetInstance()->isStartVideo(iWinID,SubScreenID))
+    { 
+        CManager::GetInstance()->StopPlay(iWinID, SubScreenID);
+        bNeedToRestart = true;
+    }
+    
+    if (-1 == CManager::GetInstance()->ChangeSubscreenPos(iWinID, SubScreenID, Pos))
+    {
+        return -1;
+    }
+
+    if (bNeedToRestart)
+    {
+        CManager::GetInstance()->StartPlay(iWinID, SubScreenID);
+    }
+    
+    LOG_DEBUG << "Exit the function ResetSubScreenPos";
+    return 0;
 }
 
 DRAWLIB_DECL int __stdcall Drawlib_CreateSubScreen(int iWinID,SRect pos)

@@ -23,8 +23,9 @@ class CManager
 
         int Init();
     public:
-
+        
         int GetMonitorCnt();
+        int GetMonitorWH(int iMonitorIndex,int &iWidth, int &iHeight);
         //创建一个视频窗口
         int CreateVideoWindows(void *parent, SRect pos, const char* pBGFile, int iMonitorIndex, bool bFullScreen);
         int CreateVideoWindows(SRect pos,const char* pBGFile, int iMonitorIndex);
@@ -66,6 +67,7 @@ class CManager
 
         void SetTextMoveInfo(int iWinID,int SubScreenID,enMovePolicy enPolicy,float fRate);
 
+        bool isStartVideo(int iWinID, int iSubScreenID);
         void StartPlay(int iWinID,int iSubScreenID);
         void StopPlay(int iWinID, int iSubScreenID);
         //开始渲染所有的窗口视频
